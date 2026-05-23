@@ -1,0 +1,30 @@
+name: Deploy Cloud Security Hub
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install mkdocs-material
+        run: pip install mkdocs-material
+      - name: Install LibreOffice
+        run: sudo apt-get install -y libreoffice
+      - name: Convert DOCX/PPTX to PDF
+        run: |
+          find docs/cspm -name "*.docx" -o -name "*.pptx" 2>/dev/null | while read f; do
+            libreoffice --headless --convert-to pdf "$f" --outdir "$(dirname "$f")" || true
+          done
+      - name: Generate file listings
+        run: python3 scripts/build_downloads.py
+      - name: Deploy
+        run: mkdocs gh-deploy --force

@@ -1,0 +1,58 @@
+site_name: Cloud Security Hub
+site_url: https://ngwaalain.github.io/CloudSecurity
+repo_url: https://github.com/ngwaalain/CloudSecurity
+repo_name: CloudSecurity
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - toc.integrate
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - CSPM:
+    - Overview: cspm/index.md
+    - Runbooks: cspm/runbooks/index.md
+    - Exceptions: cspm/exceptions/index.md
+    - Risk Register: cspm/risk-register/index.md
+  - Contact us: contact.md
