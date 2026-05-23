@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wiz CSPM Exception Governance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2330;
+  --border: #30363d;
+  --border2: #21262d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --hint: #484f58;
+  --blue: #378ADD;
+  --blue-light: #B5D4F4;
+  --blue-dark: #0C447C;
+  --teal: #1D9E75;
+  --teal-light: #9FE1CB;
+  --teal-dark: #085041;
+  --purple: #7F77DD;
+  --purple-light: #CECBF6;
+  --purple-dark: #3C3489;
+  --amber: #BA7517;
+  --amber-light: #FAC775;
+  --amber-dark: #633806;
+  --green: #639922;
+  --green-light: #C0DD97;
+  --green-dark: #27500A;
+  --red: #E24B4A;
+  --red-light: #F7C1C1;
+  --red-dark: #791F1F;
+  --gray-light: #D3D1C7;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+
+/* HEADER */
+.header { border-bottom: 1px solid var(--border); padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; }
+.header-left h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.header-left p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.badge { font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+
+/* NAV TABS */
+.nav { display: flex; gap: 2px; padding: 0 40px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.nav-tab { padding: 12px 16px; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s, border-color .15s; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font); }
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--text); border-bottom-color: var(--blue); }
+
+/* CONTENT */
+.content { padding: 32px 40px; max-width: 1100px; }
+.panel { display: none; }
+.panel.active { display: block; }
+.section-label { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; }
+
+/* FLOW DIAGRAM WRAPPER */
+.flow-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; }
+.flow-card svg { display: block; }
+
+/* STEP CARDS */
+.steps { display: flex; flex-direction: column; gap: 1px; }
+.step { display: flex; gap: 16px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); position: relative; transition: border-color .15s; }
+.step:hover { border-color: var(--border2); }
+.step-connector { position: absolute; left: 28px; top: 54px; width: 2px; height: calc(100% - 40px + 2px); background: var(--border); z-index: 0; }
+.step.no-connector .step-connector { display: none; }
+.num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-family: var(--mono); flex-shrink: 0; position: relative; z-index: 1; }
+.step-body { flex: 1; }
+.step-title { font-size: 13px; font-weight: 500; }
+.step-desc { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+.sla { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-family: var(--mono); margin-top: 6px; padding: 2px 8px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.owner-tag { float: right; font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 8px; }
+
+/* COLORS */
+.n-blue { background: #0c2340; color: var(--blue-light); }
+.n-teal { background: #04201a; color: var(--teal-light); }
+.n-purple { background: #1a1840; color: var(--purple-light); }
+.n-amber { background: #2a1a04; color: var(--amber-light); }
+.n-green { background: #142208; color: var(--green-light); }
+.n-red { background: #2d0f0f; color: var(--red-light); }
+.n-gray { background: var(--surface2); color: var(--gray-light); }
+.t-blue { background: #0c2340; color: var(--blue-light); }
+.t-teal { background: #04201a; color: var(--teal-light); }
+.t-purple { background: #1a1840; color: var(--purple-light); }
+.t-amber { background: #2a1a04; color: var(--amber-light); }
+.t-green { background: #142208; color: var(--green-light); }
+.t-red { background: #2d0f0f; color: var(--red-light); }
+.step.approved { border-left: 3px solid var(--green); }
+.step.rejected { border-left: 3px solid var(--red); }
+.step.preassess { border-left: 3px solid var(--amber); }
+
+/* RISK SCORING */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+@media(max-width:600px){ .risk-grid { grid-template-columns: 1fr; } }
+.risk-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.risk-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: var(--mono); }
+.risk-max { font-size: 11px; color: var(--hint); margin-top: 4px; }
+input[type=range] { width: 100%; accent-color: var(--purple); cursor: pointer; }
+.score-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; text-align: center; margin-bottom: 16px; }
+.score-num { font-size: 48px; font-weight: 600; font-family: var(--mono); transition: color .3s; }
+.score-bar-wrap { height: 6px; border-radius: 3px; background: var(--surface2); margin: 10px 0 6px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 3px; transition: width .3s, background .3s; }
+.score-ticks { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--mono); color: var(--hint); }
+.score-verdict { font-size: 13px; margin-top: 8px; transition: color .3s; }
+.threshold-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.threshold-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+.threshold-card .label { font-family: var(--mono); font-size: 11px; margin-bottom: 4px; }
+.threshold-card .desc { font-size: 12px; color: var(--muted); }
+
+/* DEVIATION ROUTING */
+.dev-cards { display: flex; flex-direction: column; gap: 10px; }
+.dev-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; border-left: 4px solid; }
+.dev-card.fp { border-left-color: var(--red); }
+.dev-card.design { border-left-color: var(--blue); }
+.dev-card.exception { border-left-color: var(--teal); }
+.dev-card.risk { border-left-color: var(--amber); }
+.dev-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.dev-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.approver-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.approver { font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+
+/* EXPIRY TIMELINE */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: var(--border); border-radius: 2px; }
+.tl-item { position: relative; margin-bottom: 20px; }
+.tl-dot { position: absolute; left: -23px; top: 5px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); }
+.tl-label { font-size: 13px; font-weight: 500; }
+.tl-sub { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+
+/* IAC PR GATE */
+.pr-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; }
+.pr-section-title { font-size: 13px; font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.pr-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 7px; line-height: 1.4; }
+.check-icon { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+.ci { background: #142208; color: var(--green-light); }
+.cr { background: #0c2340; color: var(--blue-light); }
+code { font-family: var(--mono); font-size: 11px; background: var(--surface2); padding: 1px 5px; border-radius: 4px; color: var(--muted); }
+
+/* NOTIFICATIONS */
+.notif-list { display: flex; flex-direction: column; gap: 1px; }
+.notif-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.notif-icon { width: 36px; height: 36px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.notif-body { flex: 1; }
+.notif-name { font-size: 13px; font-weight: 500; }
+.notif-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.notif-badge { font-size: 11px; font-family: var(--mono); padding: 2px 10px; border-radius: 10px; white-space: nowrap; }
+.nb-primary { background: #142208; color: var(--green-light); border: 1px solid #27500a; }
+.nb-secondary { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.nb-new { background: #0c2340; color: var(--blue-light); border: 1px solid #0C447C; }
+.nb-dep { background: #2a1a04; color: var(--amber-light); border: 1px solid #633806; }
+
+/* DIAGRAM SVG OVERRIDES for dark mode */
+.flow-card svg text { fill: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Wiz CSPM — Exception Governance</h1>
+    <p>Logical flow, risk scoring, deviation routing, and enforcement · Cargill Cloud Security</p>
+  </div>
+  <span class="badge">v2.0 · enhanced</span>
+</div>
+
+<div class="nav">
+  <button class="nav-tab active" onclick="showPanel('flow')">Logical flow</button>
+  <button class="nav-tab" onclick="showPanel('steps')">Step-by-step</button>
+  <button class="nav-tab" onclick="showPanel('risk')">Risk scoring</button>
+  <button class="nav-tab" onclick="showPanel('deviation')">Deviation routing</button>
+  <button class="nav-tab" onclick="showPanel('rejection')">Rejection path</button>
+  <button class="nav-tab" onclick="showPanel('expiry')">Expiry enforcement</button>
+  <button class="nav-tab" onclick="showPanel('iac')">IaC PR gate</button>
+  <button class="nav-tab" onclick="showPanel('notifications')">Notifications</button>
+</div>
+
+<div class="content">
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- LOGICAL FLOW TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-flow">
+  <p class="section-label">End-to-end logical flow</p>
+  <div class="flow-card">
+<svg width="100%" viewBox="0 0 700 1260" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Wiz CSPM exception governance logical flow</title>
+<desc>Pre-assessment at top, two entry paths, exception workflow, risk gate, approval and rejection branches, implementation and expiry enforcement.</desc>
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<style>
+  .svgt { font-family:'IBM Plex Sans',sans-serif; font-size:13px; fill:#e6edf3; }
+  .svgts { font-family:'IBM Plex Sans',sans-serif; font-size:11px; fill:#8b949e; }
+  .svgth { font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; fill:#e6edf3; }
+  .node-box { stroke-width:0.5; cursor:pointer; }
+  .nb-amber { fill:#2a1a04; stroke:#854F0B; }
+  .nb-blue { fill:#0c2340; stroke:#185FA5; }
+  .nb-teal { fill:#04201a; stroke:#0F6E56; }
+  .nb-purple { fill:#1a1840; stroke:#534AB7; }
+  .nb-gray { fill:#161b22; stroke:#30363d; }
+  .nb-green { fill:#142208; stroke:#3B6D11; }
+  .nb-red { fill:#2d0f0f; stroke:#A32D2D; }
+  .nb-amber .svgth,.nb-amber .svgt { fill:#FAC775; }
+  .nb-amber .svgts { fill:#BA7517; }
+  .nb-blue .svgth,.nb-blue .svgt { fill:#B5D4F4; }
+  .nb-blue .svgts { fill:#378ADD; }
+  .nb-teal .svgth,.nb-teal .svgt { fill:#9FE1CB; }
+  .nb-teal .svgts { fill:#1D9E75; }
+  .nb-purple .svgth,.nb-purple .svgt { fill:#CECBF6; }
+  .nb-purple .svgts { fill:#7F77DD; }
+  .nb-gray .svgth,.nb-gray .svgt { fill:#D3D1C7; }
+  .nb-gray .svgts { fill:#888780; }
+  .nb-green .svgth,.nb-green .svgt { fill:#C0DD97; }
+  .nb-green .svgts { fill:#639922; }
+  .nb-red .svgth,.nb-red .svgt { fill:#F7C1C1; }
+  .nb-red .svgts { fill:#E24B4A; }
+</style>
+
+<!-- Legend -->
+<rect x="30" y="12" width="640" height="32" rx="6" fill="#161b22" stroke="#30363d" stroke-width="0.5"/>
+<circle cx="100" cy="28" r="6" fill="#0c2340" stroke="#185FA5" stroke-width="0.5"/>
+<text class="svgts" x="112" y="33">App owner</text>
+<circle cx="200" cy="28" r="6" fill="#04201a" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="svgts" x="212" y="33">Cloud Security</text>
+<circle cx="316" cy="28" r="6" fill="#1a1840" stroke="#534AB7" stroke-width="0.5"/>
+<text class="svgts" x="328" y="33">Arch. Security</text>
+<circle cx="430" cy="28" r="6" fill="#2a1a04" stroke="#854F0B" stroke-width="0.5"/>
+<text class="svgts" x="442" y="33">Joint / system</text>
+<line x1="530" y1="28" x2="548" y2="28" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text class="svgts" x="554" y="33">Rejection</text>
+<line x1="606" y1="28" x2="624" y2="28" stroke="#639922" stroke-width="1.5"/>
+<text class="svgts" x="630" y="33">Approval</text>
+
+<!-- PRE-ASSESSMENT -->
+<text class="svgts" x="350" y="64" text-anchor="middle">One-time framework gate — Cloud Security + Arch. Security</text>
+<g class="node-box nb-amber">
+  <rect x="80" y="70" width="540" height="52" rx="8"/>
+  <text class="svgth" x="350" y="89" text-anchor="middle" dominant-baseline="central">Pre-assessment — org control / rule review</text>
+  <text class="svgts" x="350" y="107" text-anchor="middle" dominant-baseline="central">Confirm every CSPM control is valid and necessary · invalid controls removed before exceptions begin</text>
+</g>
+
+<!-- Split arrow -->
+<line x1="350" y1="122" x2="350" y2="144" stroke="#484f58" stroke-width="1.5"/>
+<path d="M350 144 L180 144 L180 166" fill="none" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M350 144 L520 144 L520 166" fill="none" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+<text class="svgts" x="180" y="160" text-anchor="middle">Path A — runtime</text>
+<text class="svgts" x="520" y="160" text-anchor="middle">Path B — control exception</text>
+
+<!-- PATH A -->
+<g class="node-box nb-blue">
+  <rect x="50" y="166" width="260" height="42" rx="8"/>
+  <text class="svgth" x="180" y="183" text-anchor="middle" dominant-baseline="central">App owner deploys resource</text>
+  <text class="svgts" x="180" y="199" text-anchor="middle" dominant-baseline="central">Via GitHub / IaC pipeline</text>
+</g>
+<line x1="180" y1="208" x2="180" y2="232" stroke="#484f58" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+<g class="node-box nb-amber">
+  <rect x="50" y="232" width="260" height="52" rx="8"/>
+  <text class="svgth" x="180" y="250" text-anchor="middle" dominant-baseline="central">Wiz CI/CD scanner</text>
+  <text class="svgts" x="180" y="266" text-anchor="middle" dominant-baseline="central">IaC prevent policy configured in Wiz</text>
+  <text class="svgts" x="180" y="280" text-anchor="middle" dominant-baseline="central">Detects misconfiguration at build/runtime</text>
+</g>
+<line x1="180" y1="284" x2="180" y2="308" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+<g class="node-box nb-amber">
+  <rect x="50" y="308" width="260" height="42" rx="8"/>
+  <text class="svgth" x="180" y="325" text-anchor="middle" dominant-baseline="central">Wiz finding raised</text>
+  <text class="svgts" x="180" y="341" text-anchor="middle" dominant-baseline="central">Runtime or build-stage violation</text>
+</g>
+
+<!-- PATH B -->
+<g class="node-box nb-blue">
+  <rect x="390" y="166" width="260" height="52" rx="8"/>
+  <text class="svgth" x="520" y="184" text-anchor="middle" dominant-baseline="central">App owner requests control exception</text>
+  <text class="svgts" x="520" y="200" text-anchor="middle" dominant-baseline="central">Control not applicable to their</text>
+  <text class="svgts" x="520" y="214" text-anchor="middle" dominant-baseline="central">platform or specific resources</text>
+</g>
+
+<!-- Converge -->
+<path d="M180 350 L180 368 L350 368 L350 400" fill="none" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M520 218 L520 368 L350 368" fill="none" stroke="#484f58" stroke-width="1.5"/>
+<text class="svgts" x="350" y="392" text-anchor="middle">paths converge</text>
+
+<!-- SUBMIT EXCEPTION -->
+<g class="node-box nb-blue">
+  <rect x="140" y="404" width="420" height="52" rx="8"/>
+  <text class="svgth" x="350" y="422" text-anchor="middle" dominant-baseline="central">App owner submits proposed exception</text>
+  <text class="svgts" x="350" y="438" text-anchor="middle" dominant-baseline="central">Resource details · justification · deviation type (Exception / Design / False Positive / Risk Accepted)</text>
+</g>
+<line x1="350" y1="456" x2="350" y2="480" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<!-- PLATFORM CONTROL REVIEW -->
+<g class="node-box nb-teal">
+  <rect x="140" y="480" width="420" height="42" rx="8"/>
+  <text class="svgth" x="350" y="497" text-anchor="middle" dominant-baseline="central">Platform control review — Cloud Security</text>
+  <text class="svgts" x="350" y="513" text-anchor="middle" dominant-baseline="central">Technical validation · SLA 2 business days</text>
+</g>
+<line x1="350" y1="522" x2="350" y2="546" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<!-- FINDING REVIEW -->
+<g class="node-box nb-purple">
+  <rect x="140" y="546" width="420" height="42" rx="8"/>
+  <text class="svgth" x="350" y="563" text-anchor="middle" dominant-baseline="central">Finding review — Arch. Security</text>
+  <text class="svgts" x="350" y="579" text-anchor="middle" dominant-baseline="central">Reviews finding in context · SLA 2 business days</text>
+</g>
+<line x1="350" y1="588" x2="350" y2="612" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<!-- CARGILNOW TICKET -->
+<g class="node-box nb-gray">
+  <rect x="140" y="612" width="420" height="42" rx="8"/>
+  <text class="svgth" x="350" y="629" text-anchor="middle" dominant-baseline="central">CargillNow exception ticket created</text>
+  <text class="svgts" x="350" y="645" text-anchor="middle" dominant-baseline="central">Deviation type sets approval weight · same day</text>
+</g>
+<line x1="350" y1="654" x2="350" y2="678" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<!-- RISK ASSESSMENT -->
+<g class="node-box nb-purple">
+  <rect x="140" y="678" width="420" height="52" rx="8"/>
+  <text class="svgth" x="350" y="696" text-anchor="middle" dominant-baseline="central">Risk assessment — Arch. Security + Cloud Security</text>
+  <text class="svgts" x="350" y="712" text-anchor="middle" dominant-baseline="central">Exposure · Data · Identity · Attack paths · Criticality</text>
+  <text class="svgts" x="350" y="726" text-anchor="middle" dominant-baseline="central">Score &lt;30 expedited · 30–69 standard · ≥70 CISO escalation</text>
+</g>
+<line x1="350" y1="730" x2="350" y2="754" stroke="#484f58" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<!-- DECISION DIAMOND -->
+<polygon points="350,754 398,784 350,814 302,784" fill="#161b22" stroke="#484f58" stroke-width="0.5"/>
+<text class="svgt" x="350" y="788" text-anchor="middle" dominant-baseline="central" font-size="12">Approved?</text>
+
+<!-- YES right -->
+<path d="M398 784 L460 784 L460 828" fill="none" stroke="#639922" stroke-width="1.5" marker-end="url(#arr)"/>
+<text class="svgts" x="428" y="778" fill="#639922">Yes</text>
+<!-- NO left -->
+<path d="M302 784 L240 784 L240 828" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+<text class="svgts" x="256" y="778" fill="#E24B4A">No</text>
+
+<!-- REJECTION PATH -->
+<g class="node-box nb-red">
+  <rect x="56" y="828" width="240" height="42" rx="8"/>
+  <text class="svgth" x="176" y="845" text-anchor="middle" dominant-baseline="central">Rejection issued</text>
+  <text class="svgts" x="176" y="861" text-anchor="middle" dominant-baseline="central">Reason code + remediation guidance</text>
+</g>
+<line x1="176" y1="870" x2="176" y2="894" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+<g class="node-box nb-red">
+  <rect x="56" y="894" width="240" height="52" rx="8"/>
+  <text class="svgth" x="176" y="912" text-anchor="middle" dominant-baseline="central">Owner remediation</text>
+  <text class="svgts" x="176" y="928" text-anchor="middle" dominant-baseline="central">Fix · re-submit · escalate to CISO</text>
+  <text class="svgts" x="176" y="942" text-anchor="middle" dominant-baseline="central">SLA 5 business days</text>
+</g>
+<!-- re-submit arrow -->
+<path d="M56 920 L30 920 L30 430 L140 430" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+<text class="svgts" x="36" y="700" fill="#E24B4A" transform="rotate(-90 36 700)">Re-submit</text>
+<line x1="176" y1="946" x2="176" y2="970" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+<g class="node-box nb-gray">
+  <rect x="56" y="970" width="240" height="42" rx="8"/>
+  <text class="svgth" x="176" y="987" text-anchor="middle" dominant-baseline="central">No response — escalation</text>
+  <text class="svgts" x="176" y="1003" text-anchor="middle" dominant-baseline="central">Manager notified · non-compliant flag</text>
+</g>
+
+<!-- APPROVAL PATH -->
+<g class="node-box nb-green">
+  <rect x="404" y="828" width="240" height="42" rx="8"/>
+  <text class="svgth" x="524" y="845" text-anchor="middle" dominant-baseline="central">Notify approved</text>
+  <text class="svgts" x="524" y="861" text-anchor="middle" dominant-baseline="central">ServiceNow primary · email secondary</text>
+</g>
+<line x1="524" y1="870" x2="524" y2="894" stroke="#639922" stroke-width="1.5" marker-end="url(#arr)"/>
+<g class="node-box nb-green">
+  <rect x="404" y="894" width="240" height="42" rx="8"/>
+  <text class="svgth" x="524" y="911" text-anchor="middle" dominant-baseline="central">Implement exception</text>
+  <text class="svgts" x="524" y="927" text-anchor="middle" dominant-baseline="central">Cloud Security · SLA 2 business days</text>
+</g>
+<line x1="524" y1="936" x2="524" y2="960" stroke="#639922" stroke-width="1.5" marker-end="url(#arr)"/>
+<g class="node-box nb-teal">
+  <rect x="404" y="960" width="240" height="52" rx="8"/>
+  <text class="svgth" x="524" y="978" text-anchor="middle" dominant-baseline="central">Wiz policy / IaC PR gate</text>
+  <text class="svgts" x="524" y="994" text-anchor="middle" dominant-baseline="central">PR linked to CargillNow ticket</text>
+  <text class="svgts" x="524" y="1008" text-anchor="middle" dominant-baseline="central">1 reviewer · Wiz scan must pass</text>
+</g>
+<line x1="524" y1="1012" x2="524" y2="1036" stroke="#639922" stroke-width="1.5" marker-end="url(#arr)"/>
+<g class="node-box nb-amber">
+  <rect x="404" y="1036" width="240" height="52" rx="8"/>
+  <text class="svgth" x="524" y="1054" text-anchor="middle" dominant-baseline="central">Expiry enforcement</text>
+  <text class="svgts" x="524" y="1070" text-anchor="middle" dominant-baseline="central">T-30 warn · T-7 escalate</text>
+  <text class="svgts" x="524" y="1084" text-anchor="middle" dominant-baseline="central">T+0 auto-revoke via ServiceNow</text>
+</g>
+
+</svg>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- STEP-BY-STEP TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-steps">
+  <p class="section-label">All steps with owners and SLAs</p>
+  <div class="steps">
+
+    <div class="step preassess">
+      <div class="step-connector"></div>
+      <div class="num n-amber">0</div>
+      <div class="step-body">
+        <div class="step-title">Pre-assessment — org control / rule review <span class="owner-tag t-amber">Cloud Security + Arch. Security</span></div>
+        <div class="step-desc">One-time framework gate. Both teams jointly review all CSPM controls to confirm they are valid, necessary, and appropriate. Controls identified as inapplicable or duplicative are removed from the framework before the exception process begins. This prevents spurious exceptions down the line.</div>
+        <span class="sla">⏱ Periodic review — not per-exception</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-blue">A</div>
+      <div class="step-body">
+        <div class="step-title">Path A — App owner deploys resource <span class="owner-tag t-blue">App owner</span></div>
+        <div class="step-desc">Resource deployed via GitHub or IaC pipeline. Wiz CI/CD scanner (with IaC prevent policy configured inside Wiz) detects misconfiguration at build or runtime and raises a Wiz finding.</div>
+        <span class="sla">⏱ Automated detection — no SLA</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-blue">B</div>
+      <div class="step-body">
+        <div class="step-title">Path B — App owner requests control exception <span class="owner-tag t-blue">App owner</span></div>
+        <div class="step-desc">App owner identifies a CSPM control that is not needed or applicable for their platform or specific resources. They request a control-level exception directly — no Wiz finding is required to trigger this path.</div>
+        <span class="sla">⏱ Owner initiates — no automated trigger</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-blue">1</div>
+      <div class="step-body">
+        <div class="step-title">App owner submits proposed exception <span class="owner-tag t-blue">App owner</span></div>
+        <div class="step-desc">Owner submits: resource details, business justification, and deviation type — Exception (time-limited), Design, False Positive, or Risk Accepted. Deviation type determines which approval path is followed.</div>
+        <span class="sla">⏱ Owner has 2 business days to submit after finding</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-teal">2</div>
+      <div class="step-body">
+        <div class="step-title">Platform control review <span class="owner-tag t-teal">Cloud Security</span></div>
+        <div class="step-desc">Cloud Security validates the technical context of the exception request. Confirms the resource details are accurate and the control applies. Escalates to finding review if context is unclear.</div>
+        <span class="sla">⏱ SLA: 2 business days</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-purple">3</div>
+      <div class="step-body">
+        <div class="step-title">Finding review <span class="owner-tag t-purple">Arch. Security</span></div>
+        <div class="step-desc">Arch. Security reviews the Wiz finding or control exception in context of the submitted deviation type. Confirms scope and validates the justification before risk scoring.</div>
+        <span class="sla">⏱ SLA: 2 business days</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-gray">4</div>
+      <div class="step-body">
+        <div class="step-title">CargillNow exception ticket created <span class="owner-tag n-gray">System</span></div>
+        <div class="step-desc">Exception ticket opened in CargillNow / ServiceNow. Deviation type is recorded and routes the ticket to the appropriate approval workflow and approval weight required.</div>
+        <span class="sla">⏱ Same day as step 3 completion</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-connector"></div>
+      <div class="num n-purple">5</div>
+      <div class="step-body">
+        <div class="step-title">Risk assessment <span class="owner-tag t-purple">Arch. Security + Cloud Security</span></div>
+        <div class="step-desc">Both teams jointly score five dimensions: Exposure (0–25), Data sensitivity (0–25), Identity blast radius (0–20), Attack path length (0–15), Criticality (0–15). Total score out of 100 gates the approval path. Score &lt;30 → expedited. 30–69 → standard. ≥70 → CISO escalation required.</div>
+        <span class="sla">⏱ SLA: 3 business days</span>
+      </div>
+    </div>
+
+    <div class="step approved">
+      <div class="step-connector"></div>
+      <div class="num n-green">6a</div>
+      <div class="step-body">
+        <div class="step-title">Approved → notify <span class="owner-tag t-green">System / Cloud Security</span></div>
+        <div class="step-desc">Approval recorded in CargillNow. ServiceNow auto-notifies app owner and resource owner. Email sent as secondary channel only.</div>
+        <span class="sla">⏱ Automated within 1 hour of approval decision</span>
+      </div>
+    </div>
+
+    <div class="step approved">
+      <div class="step-connector"></div>
+      <div class="num n-green">7</div>
+      <div class="step-body">
+        <div class="step-title">Implement approved exception <span class="owner-tag t-green">Cloud Security</span></div>
+        <div class="step-desc">Cloud Security implements via Wiz ignore policy update or IaC Git PR. PR follows the formal gate process (see IaC PR gate tab): linked to CargillNow ticket, 1 reviewer, Wiz scan must pass, expiry date in metadata.</div>
+        <span class="sla">⏱ SLA: 2 business days</span>
+      </div>
+    </div>
+
+    <div class="step approved">
+      <div class="step-connector"></div>
+      <div class="num n-green">8</div>
+      <div class="step-body">
+        <div class="step-title">Expiry enforcement <span class="owner-tag t-amber">ServiceNow automated</span></div>
+        <div class="step-desc">ServiceNow tracks expiry date set at approval. T-30 days: warning to owner. T-7 days: manager escalation if no renewal action. T+0: Wiz ignore policy auto-revoked, resource re-enters findings queue, CargillNow ticket closed as expired.</div>
+        <span class="sla">⏱ Fully automated — no manual SLA needed</span>
+      </div>
+    </div>
+
+    <div class="step rejected no-connector">
+      <div class="num n-red">6b</div>
+      <div class="step-body">
+        <div class="step-title">Rejected → remediation loop <span class="owner-tag t-red">Cloud Security / Arch. Security</span></div>
+        <div class="step-desc">Rejection recorded in CargillNow with reason code and remediation options: (1) fix the resource, (2) re-submit with stronger justification, or (3) escalate to CISO for risk acceptance sign-off. Owner must respond within 5 business days or manager is auto-notified and resource flagged non-compliant in Wiz.</div>
+        <span class="sla">⏱ Owner SLA: 5 business days to respond</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- RISK SCORING TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-risk">
+  <p class="section-label">Interactive risk score calculator</p>
+  <div class="risk-grid">
+    <div class="risk-item">
+      <div class="risk-label">Exposure (max 25)</div>
+      <input type="range" min="0" max="25" value="15" oninput="calcRisk()">
+      <div class="risk-max">0 = internal only · 25 = internet-facing</div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-label">Data sensitivity (max 25)</div>
+      <input type="range" min="0" max="25" value="10" oninput="calcRisk()">
+      <div class="risk-max">0 = public data · 25 = PII / regulated</div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-label">Identity blast radius (max 20)</div>
+      <input type="range" min="0" max="20" value="10" oninput="calcRisk()">
+      <div class="risk-max">0 = single user · 20 = admin / org-wide</div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-label">Attack path length (max 15)</div>
+      <input type="range" min="0" max="15" value="5" oninput="calcRisk()">
+      <div class="risk-max">0 = no exploitable path · 15 = direct</div>
+    </div>
+  </div>
+  <div class="risk-item" style="margin-bottom:16px">
+    <div class="risk-label">Criticality — business impact (max 15)</div>
+    <input type="range" min="0" max="15" value="8" oninput="calcRisk()" style="width:100%">
+    <div class="risk-max">0 = non-critical · 15 = tier-1 production</div>
+  </div>
+  <div class="score-box">
+    <div class="score-num" id="score-num">48</div>
+    <div class="score-bar-wrap"><div class="score-bar-fill" id="score-fill" style="width:48%;background:#378ADD"></div></div>
+    <div class="score-ticks"><span>0</span><span style="color:#639922">30 — expedited</span><span style="color:#E24B4A">70 — CISO</span><span>100</span></div>
+    <div class="score-verdict" id="score-verdict" style="color:#8b949e">Standard approval — Arch. Security + Cloud Security review · SLA 3 business days</div>
+  </div>
+  <div class="threshold-cards">
+    <div class="threshold-card">
+      <div class="label" style="color:#639922">Score 0–29</div>
+      <div class="desc">Expedited approval · 1 approver · 1 business day</div>
+    </div>
+    <div class="threshold-card">
+      <div class="label" style="color:#378ADD">Score 30–69</div>
+      <div class="desc">Standard path · Arch. Security + Cloud Security · 3 days</div>
+    </div>
+    <div class="threshold-card">
+      <div class="label" style="color:#E24B4A">Score 70–100</div>
+      <div class="desc">CISO escalation required before approval · 10 days</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- DEVIATION ROUTING TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-deviation">
+  <p class="section-label">Deviation type — approval routing</p>
+  <div class="dev-cards">
+    <div class="dev-card fp">
+      <div class="dev-title" style="color:#F7C1C1">False Positive</div>
+      <div class="dev-subtitle">Lightweight path — the control flagged something that is not actually a risk. Technical validation only, no risk committee needed.</div>
+      <div class="approver-row">
+        <span class="approver">Platform engineer (confirms FP)</span>
+        <span class="approver">Cloud Security sign-off</span>
+      </div>
+      <span class="sla">⏱ Total SLA: 2 business days</span>
+    </div>
+    <div class="dev-card design">
+      <div class="dev-title" style="color:#B5D4F4">Design exception</div>
+      <div class="dev-subtitle">Architectural review required — the control conflicts with an intentional design pattern. May recur across multiple resources so the pattern must be assessed, not just the instance.</div>
+      <div class="approver-row">
+        <span class="approver">Platform control review</span>
+        <span class="approver">Arch. Security</span>
+        <span class="approver">App owner sign-off</span>
+      </div>
+      <span class="sla">⏱ Total SLA: 5 business days</span>
+    </div>
+    <div class="dev-card exception">
+      <div class="dev-title" style="color:#9FE1CB">Exception (time-limited)</div>
+      <div class="dev-subtitle">Standard path with mandatory expiry. Control is valid but a temporary deviation is acceptable with justification. Renewal requires full re-justification — not auto-renewed.</div>
+      <div class="approver-row">
+        <span class="approver">Platform control review</span>
+        <span class="approver">Arch. Security</span>
+        <span class="approver">Risk score gate</span>
+      </div>
+      <span class="sla">⏱ Total SLA: 5 business days · Max duration: 90 days</span>
+    </div>
+    <div class="dev-card risk">
+      <div class="dev-title" style="color:#FAC775">Risk Accepted</div>
+      <div class="dev-subtitle">Heaviest approval path — permanent or long-term acceptance of a known risk. Requires executive sign-off and mandatory annual review. Risk score ≥70 means CISO sign-off is required regardless of deviation type.</div>
+      <div class="approver-row">
+        <span class="approver">Platform control review</span>
+        <span class="approver">Arch. Security</span>
+        <span class="approver">Risk score gate</span>
+        <span class="approver" style="color:#FAC775;border-color:#633806">CISO sign-off required</span>
+        <span class="approver">Annual review mandatory</span>
+      </div>
+      <span class="sla">⏱ Total SLA: 10 business days · Annual renewal</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- REJECTION PATH TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-rejection">
+  <p class="section-label">Rejection and remediation flow</p>
+  <div class="steps">
+    <div class="step rejected">
+      <div class="step-connector"></div>
+      <div class="num n-red">R0</div>
+      <div class="step-body">
+        <div class="step-title">Approval denied <span class="owner-tag t-purple">Arch. Security / Cloud Security</span></div>
+        <div class="step-desc">Risk assessment results in a denial. Decision recorded in CargillNow with the approving team, risk score, and specific reason for rejection.</div>
+        <span class="sla">⏱ Rejection notification automated within 1 hour</span>
+      </div>
+    </div>
+    <div class="step rejected">
+      <div class="step-connector"></div>
+      <div class="num n-red">R1</div>
+      <div class="step-body">
+        <div class="step-title">Rejection issued with guidance <span class="owner-tag t-teal">Cloud Security</span></div>
+        <div class="step-desc">CargillNow ticket updated with: reason code, specific control or policy violated, and three remediation options presented to the owner: (1) fix the misconfiguration and close, (2) re-submit with stronger justification, (3) escalate to CISO for risk acceptance sign-off.</div>
+        <span class="sla">⏱ Owner must respond within 5 business days</span>
+      </div>
+    </div>
+    <div class="step rejected">
+      <div class="step-connector"></div>
+      <div class="num n-red">R2</div>
+      <div class="step-body">
+        <div class="step-title">Owner response <span class="owner-tag t-blue">App owner</span></div>
+        <div class="step-desc">If owner fixes the resource: Wiz scanner validates automatically and finding closes. If re-submitting: exception re-enters the flow at step 1 with prior rejection history pre-populated in CargillNow. If escalating: CISO review triggered as an addition to the standard risk assessment path.</div>
+        <span class="sla">⏱ Response deadline: day 5 from rejection</span>
+      </div>
+    </div>
+    <div class="step rejected no-connector">
+      <div class="num n-gray">R3</div>
+      <div class="step-body">
+        <div class="step-title">No response — escalation <span class="owner-tag n-gray">Automated</span></div>
+        <div class="step-desc">If no owner response by day 5: manager automatically added to CargillNow ticket, resource tagged as non-compliant in Wiz, and finding escalated to CISO dashboard. Resource remains non-compliant until resolved.</div>
+        <span class="sla">⏱ Triggered automatically at day 5</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- EXPIRY ENFORCEMENT TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-expiry">
+  <p class="section-label">Auto-expiry lifecycle — ServiceNow managed</p>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot" style="background:#639922"></div>
+      <div class="tl-label">Day 0 — exception approved and implemented</div>
+      <div class="tl-sub">Expiry date set in CargillNow record. Wiz ignore policy applied with expiry metadata embedded. ServiceNow creates an auto-task for expiry tracking — no manual calendar reminders needed.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot" style="background:#BA7517"></div>
+      <div class="tl-label">T-30 days — first warning</div>
+      <div class="tl-sub">ServiceNow notifies resource owner and app owner via CargillNow ticket. Owner is prompted to review and either initiate renewal (re-enters flow at step 1 with history pre-populated) or confirm the exception is no longer needed and close it.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot" style="background:#E24B4A"></div>
+      <div class="tl-label">T-7 days — escalation if no renewal action</div>
+      <div class="tl-sub">If no renewal or closure action has been taken: manager automatically added to the CargillNow ticket. Email sent as secondary channel. Exception flagged on CISO dashboard as "expiring — no action."</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot" style="background:#A32D2D"></div>
+      <div class="tl-label">T+0 — auto-revocation</div>
+      <div class="tl-sub">If still no response: Wiz ignore policy automatically removed. Resource re-enters the Wiz findings queue. Compliance report updated. CargillNow ticket closed as "expired — not renewed." IaC metadata expiry hook triggers the PR/policy removal.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot" style="background:#378ADD"></div>
+      <div class="tl-label">Renewal path (any time before T+0)</div>
+      <div class="tl-sub">Owner triggers renewal from CargillNow at any point before expiry. Exception re-enters the workflow at step 1 with full prior history pre-populated. Risk score is re-evaluated — score may gate a higher approval weight than the original exception required.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- IAC PR GATE TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-iac">
+  <p class="section-label">Formal IaC PR / merge gate</p>
+  <div class="pr-section">
+    <div class="pr-section-title">PR creation</div>
+    <div class="pr-check"><div class="check-icon cr">→</div> PR opened by Cloud Security, title includes CargillNow ticket ID</div>
+    <div class="pr-check"><div class="check-icon cr">→</div> Branch naming: <code>exception/CNOW-{ticket-id}-{deviation-type}</code></div>
+    <div class="pr-check"><div class="check-icon cr">→</div> PR description auto-includes: deviation type, risk score, approver names, and expiry date</div>
+    <div class="pr-check"><div class="check-icon cr">→</div> Replaces the informal dotted-line connection between IaC Git and Wiz CI/CD scanner — all changes go through this gate</div>
+  </div>
+  <div class="pr-section">
+    <div class="pr-section-title">Required checks before merge</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> Wiz CI/CD scanner must pass on the PR diff — no new violations introduced by the exception change</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> Minimum 1 reviewer approved (must be Cloud Security or Arch. Security team member)</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> CargillNow ticket status = "Approved" — verified by CI pipeline via API before merge is permitted</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> Expiry date present in IaC metadata — enforced by pre-merge hook, merge blocked if missing</div>
+  </div>
+  <div class="pr-section">
+    <div class="pr-section-title">Audit trail</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> Merge commit SHA written back to CargillNow ticket for end-to-end traceability</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> All reviewer comments and approval timestamps retained in Git history</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> Wiz scanner result artifact attached to PR for audit and compliance evidence</div>
+    <div class="pr-check"><div class="check-icon ci">✓</div> Auto-revocation hook at T+0 reads expiry from IaC metadata and triggers policy removal PR automatically</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- NOTIFICATIONS TAB -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-notifications">
+  <p class="section-label">Notification channels — ServiceNow as single source of truth</p>
+  <div class="notif-list" style="display:flex;flex-direction:column;gap:8px;">
+    <div class="notif-row">
+      <div class="notif-icon" style="background:#142208;">🎫</div>
+      <div class="notif-body">
+        <div class="notif-name">CargillNow / ServiceNow</div>
+        <div class="notif-desc">All exception lifecycle events — created, approved, rejected, expiring, expired, renewed. Audit log, ticket history, SLA tracking, and renewal triggers all live here. This is the system of record.</div>
+      </div>
+      <span class="notif-badge nb-primary">Primary</span>
+    </div>
+    <div class="notif-row">
+      <div class="notif-icon" style="background:#0c2340;">💬</div>
+      <div class="notif-body">
+        <div class="notif-name">Teams / Slack (via ServiceNow webhook)</div>
+        <div class="notif-desc">Key events pushed to Cloud Security and app owner channels. Rejection notices and T-7 expiry warnings get @mentions. Configured as a ServiceNow outbound webhook — no manual notification steps.</div>
+      </div>
+      <span class="notif-badge nb-secondary">Secondary</span>
+    </div>
+    <div class="notif-row">
+      <div class="notif-icon" style="background:#2a1a04;">📧</div>
+      <div class="notif-body">
+        <div class="notif-name">Email</div>
+        <div class="notif-desc">Sent as CC / backup only via ServiceNow email action. Not the system of record. No manual email steps exist anywhere in the process — email is a redundancy layer only.</div>
+      </div>
+      <span class="notif-badge nb-dep">Demoted</span>
+    </div>
+    <div class="notif-row">
+      <div class="notif-icon" style="background:#1a1840;">📊</div>
+      <div class="notif-body">
+        <div class="notif-name">CISO dashboard</div>
+        <div class="notif-desc">Real-time view of all open exceptions by risk score, deviation type, days-to-expiry, and team. Populated automatically from ServiceNow + Wiz API. High-risk and expiring-soon exceptions are surfaced automatically.</div>
+      </div>
+      <span class="notif-badge nb-new">New</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+<script>
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+function calcRisk() {
+  const sliders = document.querySelectorAll('input[type=range]');
+  let total = 0;
+  sliders.forEach(s => total += parseInt(s.value));
+  document.getElementById('score-num').textContent = total;
+  document.getElementById('score-fill').style.width = total + '%';
+  let color, verdict;
+  if (total < 30) {
+    color = '#639922';
+    verdict = 'Expedited approval eligible — 1 approver · SLA 1 business day';
+  } else if (total < 70) {
+    color = '#378ADD';
+    verdict = 'Standard approval — Arch. Security + Cloud Security review · SLA 3 business days';
+  } else {
+    color = '#E24B4A';
+    verdict = 'High risk — CISO escalation required before approval can be granted · SLA 10 days';
+  }
+  document.getElementById('score-num').style.color = color;
+  document.getElementById('score-fill').style.background = color;
+  const v = document.getElementById('score-verdict');
+  v.textContent = verdict;
+  v.style.color = color;
+}
+</script>
+</body>
+</html>
