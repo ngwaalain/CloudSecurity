@@ -37,6 +37,9 @@ extra_css:
 
 plugins:
   - search
+  - exclude:
+      glob:
+        - "*/files/*"
 
 markdown_extensions:
   - admonition
